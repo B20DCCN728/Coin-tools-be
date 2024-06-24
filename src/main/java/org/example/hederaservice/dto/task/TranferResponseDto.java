@@ -1,4 +1,4 @@
-package org.example.hederaservice.dto;
+package org.example.hederaservice.dto.task;
 
 import lombok.*;
 

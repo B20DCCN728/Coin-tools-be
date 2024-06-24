@@ -1,4 +1,4 @@
-package org.example.hederaservice.dto;
+package org.example.hederaservice.dto.result;
 
 import com.hedera.hashgraph.sdk.Status;
 import lombok.*;

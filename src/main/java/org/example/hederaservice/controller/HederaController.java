@@ -1,8 +1,7 @@
 package org.example.hederaservice.controller;
 
-import com.hedera.hashgraph.sdk.Status;
-import org.example.hederaservice.dto.ResultResponseDto;
-import org.example.hederaservice.dto.TranferResponseDto;
+import org.example.hederaservice.dto.result.ResultResponseDto;
+import org.example.hederaservice.dto.task.TranferResponseDto;
 import org.example.hederaservice.service.HederaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
