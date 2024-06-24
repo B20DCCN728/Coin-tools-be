@@ -1,10 +1,12 @@
 package org.example.hederaservice.service;
 
+import ch.qos.logback.core.status.StatusBase;
 import com.hedera.hashgraph.sdk.*;
 import org.example.hederaservice.configuration.ClientHelper;
-import org.example.hederaservice.dto.result.BaseResultDto;
+import org.example.hederaservice.dto.result.CheckBalanceResultDto;
 import org.example.hederaservice.dto.result.CreateResultResponseDto;
 import org.example.hederaservice.dto.task.AssociateResponseDto;
+import org.example.hederaservice.dto.task.CheckBalanceDto;
 import org.example.hederaservice.dto.task.CreateAccountDto;
 import org.example.hederaservice.dto.result.ResultResponseDto;
 import org.example.hederaservice.dto.task.TranferResponseDto;
@@ -14,11 +16,12 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeoutException;
 
 @Service
 public class HederaService {
-    // Define Simp Message SendingOperations
+    // Define Simp Message SendingOperations to send messages to the client
     @Autowired
     private SimpMessageSendingOperations simpMessageSendingOperations;
 
@@ -126,15 +129,64 @@ public class HederaService {
         return createResultResponseDtos;
     }
 
-    public List<ResultResponseDto> checkBalance() {
+    // Check Balance Method to check the balance of an account
+    public List<CheckBalanceResultDto> checkBalance(CheckBalanceDto checkBalanceDto) throws InterruptedException, PrecheckStatusException, TimeoutException {
+        AccountId accountId = AccountId.fromString(checkBalanceDto.getAccountAddress());
+        PrivateKey privateKey = PrivateKey.fromString(checkBalanceDto.getPrivateKey());
+        Client client = getClient(
+                accountId,
+                privateKey,
+                "mainnet"
+        );
 
-        return null;
+        return checkBalanceDto.getAccountAddresses().stream()
+                .map(accountAddress -> {
+                    AccountBalance accountBalance = null;
+                    try {
+                        accountBalance = new AccountBalanceQuery()
+                                .setAccountId(AccountId.fromString(accountAddress))
+                                .execute(client);
+
+                        // Check if the token id is null
+                        if (checkBalanceDto.getTokenId() == null) {
+                            return CheckBalanceResultDto.builder()
+                                    .accountAddress(accountAddress)
+                                    .balance((int) accountBalance.hbars.toTinybars())
+                                    .build();
+                        } else {
+                            Map<TokenId, Long> tokenBalances = accountBalance.tokens;
+
+                            for(Map.Entry<TokenId, Long> entry : tokenBalances.entrySet()) {
+                                if(entry.getKey().toString().equals(checkBalanceDto.getTokenId())) {
+                                    return CheckBalanceResultDto.builder()
+                                            .accountAddress(accountAddress)
+                                            .tokenId(checkBalanceDto.getTokenId())
+                                            .balance((int) entry.getValue().longValue())
+                                            .build();
+                                }
+                            }
+
+                            return CheckBalanceResultDto.builder()
+                                    .accountAddress(accountAddress)
+                                    .tokenId(checkBalanceDto.getTokenId())
+                                    .balance(0)
+                                    .build();
+                        }
+                    } catch (TimeoutException | PrecheckStatusException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).toList();
     }
 
     // Define the getClient method
-    public Client getClient(AccountId operatorId, PrivateKey operatorKey, String network) throws InterruptedException
+    public Client getClient(
+            AccountId operatorId,
+            PrivateKey operatorKey,
+            String network
+    ) throws InterruptedException
     {
-        return ClientHelper.forName(network).setOperator(
+        return ClientHelper.forName(network)
+                .setOperator(
                         operatorId,
                         operatorKey
                 );
