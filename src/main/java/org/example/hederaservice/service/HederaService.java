@@ -2,6 +2,7 @@ package org.example.hederaservice.service;
 
 import com.hedera.hashgraph.sdk.*;
 import org.example.hederaservice.configuration.ClientHelper;
+import org.example.hederaservice.dto.result.BaseResultDto;
 import org.example.hederaservice.dto.result.CreateResultResponseDto;
 import org.example.hederaservice.dto.task.AssociateResponseDto;
 import org.example.hederaservice.dto.task.CreateAccountDto;
@@ -37,7 +38,10 @@ public class HederaService {
                                 .addHbarTransfer(accountId, Hbar.fromTinybars(tranferResponseDto.getAmount() * -100000000))
                                 .addHbarTransfer(AccountId.fromString(receiveAccountId), Hbar.fromTinybars(tranferResponseDto.getAmount() * 100000000))
                                 .execute(client);
-                        ResultResponseDto resultResponseDto = new ResultResponseDto(receiveAccountId, response.getReceipt(client).status);
+                        ResultResponseDto resultResponseDto = ResultResponseDto.builder()
+                                .status(response.getReceipt(client).status)
+                                .receivedAddress(receiveAccountId)
+                                .build();
                         simpMessageSendingOperations.convertAndSend("/topic/transfer", resultResponseDto);
                         return resultResponseDto;
                     } catch (TimeoutException | PrecheckStatusException | ReceiptStatusException e) {
@@ -69,7 +73,10 @@ public class HederaService {
                             TransactionResponse txResponse = transaction.freezeWith(client).sign(privateKey).execute(client);
                             TransactionReceipt receipt = txResponse.getReceipt(client);
                             Status transactionStatus = receipt.status;
-                            ResultResponseDto resultResponseDto = new ResultResponseDto(receiveAccountId, transactionStatus);
+                            ResultResponseDto resultResponseDto = ResultResponseDto.builder()
+                                    .status(transactionStatus)
+                                    .receivedAddress(receiveAccountId)
+                                    .build();
                             simpMessageSendingOperations.convertAndSend("/topic/associate", resultResponseDto);
                             return resultResponseDto;
                         }
@@ -109,6 +116,7 @@ public class HederaService {
 
             AccountId newAccountId = newAccount.getReceipt(client).accountId;
             createResultResponseDto.setStatus(newAccount.getReceipt(client).status);
+
             simpMessageSendingOperations.convertAndSend("/topic/create", createResultResponseDto);
             assert newAccountId != null;
             createResultResponseDto.setAccountAddress(newAccountId.toString());
@@ -118,14 +126,13 @@ public class HederaService {
         return createResultResponseDtos;
     }
 
+    public List<ResultResponseDto> checkBalance() {
+
+        return null;
+    }
 
     // Define the getClient method
-    public Client getClient(
-            AccountId operatorId,
-            PrivateKey operatorKey,
-            String network
-    ) throws
-            InterruptedException
+    public Client getClient(AccountId operatorId, PrivateKey operatorKey, String network) throws InterruptedException
     {
         return ClientHelper.forName(network).setOperator(
                         operatorId,

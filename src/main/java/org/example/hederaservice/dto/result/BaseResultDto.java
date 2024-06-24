@@ -4,12 +4,12 @@ import com.hedera.hashgraph.sdk.Status;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-@NoArgsConstructor
+@SuperBuilder
 @AllArgsConstructor
+@NoArgsConstructor
 @ToString
 @Getter
 @Setter
-@SuperBuilder
-public class ResultResponseDto extends BaseResultDto {
-    private String receivedAddress;
+public class BaseResultDto {
+    private Status status;
 }

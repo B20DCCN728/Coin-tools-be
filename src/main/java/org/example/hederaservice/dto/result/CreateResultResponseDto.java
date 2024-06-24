@@ -8,8 +8,7 @@ import lombok.*;
 @Setter
 @Getter
 @ToString
-public class CreateResultResponseDto {
+public class CreateResultResponseDto extends BaseResultDto {
     private String privateKey;
     private String accountAddress;
-    private Status status;
 }
